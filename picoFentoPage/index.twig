@@ -11,26 +11,65 @@
   <title>{% if meta.title %}{{ meta.title }} | {% endif %}{{ site_title }}</title>
   <link rel="stylesheet" href="{{ theme_url }}/styles/main.css" type="text/css" />
   <link rel="stylesheet" href="{{ theme_url }}/styles/highlightjs-github.css" type="text/css" />
+  
+  
+  
   {% for css_file in config.external_css %}
     <link rel="stylesheet" href="{{ css_file }}" type="text/css" />
   {% endfor %}
+ 
+ 
+
+ <link rel="stylesheet" href="{{ theme_url }}/styles/menu.css" type="text/css" />
+  
+ 
 </head>
 <body>
 
 <aside class="main-nav">
 <nav>
-  <ul>
-    {% for page in pages if page.title %}
-      <li class="menuitem {% if page.id == current_page.id %}active{% endif %}">
-        <a href="{{ page.url }}" data-shortcut="{{page.meta.shortcut}}">
-          {{ page.title }}
-          {% if page.meta.shortcut %}
-            <span class="shortcut">{{page.meta.shortcut|replace({'+':' '})}}</a>
-          {% endif %}
-        </a>
-      </li>
+test:{{ current_page.id }}
+
+{% macro tree(parent, root_page) %}
+    {% import _self as utils %}
+    {% for child in parent.children %}
+        <li> 
+            {% if child.page %}
+				{% if child.children  %}
+					<span class="caret" >{{ child.page.title }}</span>
+                {% else %}
+					<span  ><a href="{{ child.page.url }}" data-shortcut="{{page.meta.shortcut}}">
+						{{ child.page.title }} 
+						{% if page.meta.shortcut %}
+							<span class="shortcut">{{page.meta.shortcut|replace({'+':' '})}}</a>
+						{% endif %}
+					</a></span>
+				{% endif %}
+            {% endif %}
+            
+            
+            
+            {% if child.children  %}
+                <ul class="nested {% if child.id in root_page.id %}active{% endif %}">
+                    {{ utils.tree(child, root_page) }}
+                </ul>
+            {% endif %}
+        </li>
     {% endfor %}
-  </ul>
+{% endmacro %}
+
+
+	
+<ul id="myUL">
+    <li>
+        <div>{{ pages["index"].title }}</div>
+    </li>
+
+    {% import _self as utils %}
+    {{ utils.tree(pages["index"].tree_node, current_page) }}
+</ul>
+	
+
 </nav>
 </aside>
 <main class="main-content">
@@ -47,6 +86,8 @@
 <script src="{{ theme_url }}/scripts/highlight.js"></script>
 <script src="{{ theme_url }}/scripts/mousetrap.min.js"></script>
 <script src="{{ theme_url }}/scripts/clipboard.min.js"></script>
+<script src="{{ theme_url }}/scripts/menu.js"></script>
+
 <script>
   hljs.initHighlightingOnLoad();
 
