@@ -28,6 +28,8 @@ class PicoFotofolder extends AbstractPicoPlugin {
     public function onContentLoaded(&$rawContent) {
         $rawContent = preg_replace_callback( '/\(%\s+' . $this->p_keyword  .'\s*\(\s*(.*?)\s*\)\s+%\)/', function($match) {
 
+		$assets_url=$this->getConfig('assets_url');
+
             if ($match[1]) {
 
                 //check for GD library see #1
@@ -48,11 +50,14 @@ class PicoFotofolder extends AbstractPicoPlugin {
     				// handle image path if %assets_url% is used see #1
                     $this->image_src['path'] = preg_replace('/%assets_url%/', rtrim($this->getConfig('assets_url'), "/"), $this->image_src['path']);
                     $repl = '/http[s]?:\/\/' . $_SERVER['SERVER_NAME'] . '/';
-                    $this->image_src['path'] = preg_replace($repl, '', $this->image_src['path']);
+                    $this->image_src['path']    = preg_replace($repl, '', $this->image_src['path']);
+		    $this->image_src['realPath'] =preg_replace('/^' . preg_quote($assets_url, '/') . '/', 'assets/',  $this->image_src['path']);
 
     				$img_metas = $this->readMetaArray();
 
-    				if (count($img_metas) > 0) {
+
+
+                   if (count($img_metas) > 0) {
                         $out = $this->createOutput($img_metas);
                         $this->p_count++;
                     }
@@ -89,6 +94,16 @@ class PicoFotofolder extends AbstractPicoPlugin {
             $jsh .= '</script>' . "\n";
             $jsh .= '</body>' . "\n" . '</html>' . "\n";
             $output = preg_replace('/\\<\\/body\\>\s*\n\s*\\<\/html\\>/', $jsh, $output, 1);
+
+
+
+	    // Add baguetteBox
+	    $jsh = "<script>\n";
+	    $jsh .= "	baguetteBox.run('.baguette_pou', { \n";
+	    $jsh .= "       fullScreen: true, \n";
+	    $jsh .= "   });\n";
+	    $jsh .= "</script>\n";
+            $output = preg_replace('/\\<\\/body\\>\s*\n\s*\\<\/html\\>/', $jsh, $output, 1);
         }
     }
 
@@ -100,11 +115,13 @@ class PicoFotofolder extends AbstractPicoPlugin {
 	/***************************************************************/
 	private function readMetaArray() {
         $dir = $_SERVER['DOCUMENT_ROOT'] . $this->image_src['path'];
+	$dir = $this->getRootDir() . $this->image_src['realPath'];
 
         $img_metas = array();
         $pattern = '{,.}*.{[jJ][pP][gG],[jJ][pP][eE][gG],[pP][nN][gG],[gG][iI][fF],dat}';
         $filelist = glob($dir . '/' . $pattern, GLOB_BRACE);
-		usort($filelist, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
+//		usort($filelist, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
+
 
  		//check if metafile is still up to date or if we have to create a new one
 		if (strpos($filelist[0], '.fotofolder.dat') == true) {
@@ -118,13 +135,15 @@ class PicoFotofolder extends AbstractPicoPlugin {
         			list($width, $height, $type, $attr) = getimagesize($img);
         			$exif = (exif_read_data($img, 0, true));
         			$url = str_replace($_SERVER['DOCUMENT_ROOT'], '', $img);
-        			$img_name = pathinfo($img, PATHINFO_BASENAME);
+				$img_name = pathinfo($img, PATHINFO_BASENAME);
+				$url = $this->image_src['path']."/".$img_name;
+
 
 					// handle thumbnails
-					if (!file_exists( $_SERVER['DOCUMENT_ROOT'] . $this->image_src['path'] . '/thumbnails' )) {
-    					mkdir( $_SERVER['DOCUMENT_ROOT'] . $this->image_src['path'] . '/thumbnails', 0777, true);
+					if (!file_exists( $this->getRootDir()."/".$this->image_src['realPath'] . '/thumbnails' )) {
+    					mkdir( $this->getRootDir()."/".$this->image_src['realPath'] . '/thumbnails', 0777, true);
 					}
-					$thumb_name = $_SERVER['DOCUMENT_ROOT'] . $this->image_src['path'] . '/thumbnails/thumb_' . $img_name;
+					$thumb_name = $this->getRootDir()."/".$this->image_src['realPath'] . '/thumbnails/thumb_' . $img_name;
 					if ( !file_exists($thumb_name) ) {
         				$this->scaleImageCopy($img, $thumb_name, 300, 300);
 					}
@@ -154,7 +173,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 				}
 			}
 			$string_data = serialize($img_metas);
-			file_put_contents($_SERVER['DOCUMENT_ROOT'] . $this->image_src['path'] . '/.fotofolder.dat', $string_data);
+			file_put_contents($this->getRootDir()."/".$this->image_src['realPath'] . '/.fotofolder.dat', $string_data);
         }
         return($img_metas);
 	}
@@ -173,20 +192,22 @@ class PicoFotofolder extends AbstractPicoPlugin {
             });
         }
 
-        $out = '<div class="mgrid baguette_' . $this->p_count . '">' . "\n";
+        $out = '<div class="mgrid baguette_pou">' . "\n";
         foreach ($img_metas as $pic) {
             $out .= "    <a href=\"{$pic['url']}\" class=\"mgrid-item {$pic['format']}\"> \n";
             $out .= "       <img class=\"lazy\" data-src=\"{$pic['thumb_url']}\" src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14'%3E%3C/svg%3E\" alt=\" \">\n";
-            $out .= "       <div class=\"zoomicon\" style=\"background-image: url('{$this->getConfig('plugins_url')}PicoFotofolder/assets/circleplus.png')\"> </div> \n";
+	    $out .= "	    <img class=\"lazy\" src=\"".$pic['thumb_url']."\">\n";
+            //$out .= "       <div class=\"zoomicon\" style=\"background-image: url('{$this->getConfig('plugins_url')}PicoFotofolder/assets/circleplus.png')\"> </div> \n";
             $out .= '    </a>' . "\n";
         }
         $out .= "</div>\n";
 
-		$out .= "<script>\n";
+		/*$out .= "<script>\n";
 		$out .= "	baguetteBox.run('.baguette_{$this->p_count}', { \n";
 		$out .= "       fullScreen: true, \n";
 		$out .= "   });\n";
 		$out .= "</script>\n";
+		*/
 		return $out;
     }
 
