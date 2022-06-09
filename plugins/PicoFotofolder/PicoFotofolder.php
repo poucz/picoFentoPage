@@ -98,13 +98,18 @@ class PicoFotofolder extends AbstractPicoPlugin {
 
 
 	    // Add baguetteBox
-	    $jsh = "<script>\n";
-	    $jsh .= "	baguetteBox.run('.baguette_pou', { \n";
-	    $jsh .= "       fullScreen: true, \n";
-	    $jsh .= "   });\n";
-	    $jsh .= "</script>\n";
-            $output = preg_replace('/\\<\\/body\\>\s*\n\s*\\<\/html\\>/', $jsh, $output, 1);
-        }
+	    $jsh="";
+	    for($i=0;$i<$this->p_count;$i++){
+			$jsh .= "<script>\n";
+			//$jsh .= "	baguetteBox.run('.baguette_pou', { \n";
+			$jsh .= "	baguetteBox.run('.baguette_".$i."', { \n";
+			$jsh .= "       fullScreen: true, \n";
+			$jsh .= "   });\n";
+			$jsh .= "</script>\n";
+			
+		}
+		$output = preg_replace('/\\<\\/body\\>\s*\n\s*\\<\/html\\>/', $jsh, $output, 1);
+     }
     }
 
 
@@ -192,11 +197,11 @@ class PicoFotofolder extends AbstractPicoPlugin {
             });
         }
 
-        $out = '<div class="mgrid baguette_pou">' . "\n";
+        $out = '<div class="mgrid baguette_'.$this->p_count.'">' . "\n";
         foreach ($img_metas as $pic) {
             $out .= "    <a href=\"{$pic['url']}\" class=\"mgrid-item {$pic['format']}\"> \n";
             $out .= "       <img class=\"lazy\" data-src=\"{$pic['thumb_url']}\" src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14'%3E%3C/svg%3E\" alt=\" \">\n";
-	    $out .= "	    <img class=\"lazy\" src=\"".$pic['thumb_url']."\">\n";
+			$out .= "	    <img class=\"lazy\" src=\"".$pic['thumb_url']."\">\n";
             //$out .= "       <div class=\"zoomicon\" style=\"background-image: url('{$this->getConfig('plugins_url')}PicoFotofolder/assets/circleplus.png')\"> </div> \n";
             $out .= '    </a>' . "\n";
         }
