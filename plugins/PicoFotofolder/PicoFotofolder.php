@@ -50,19 +50,27 @@ class PicoFotofolder extends AbstractPicoPlugin {
     				// handle image path if %assets_url% is used see #1
                     $this->image_src['path'] = preg_replace('/%assets_url%/', rtrim($this->getConfig('assets_url'), "/"), $this->image_src['path']);
                     $repl = '/http[s]?:\/\/' . $_SERVER['SERVER_NAME'] . '/';
-                    $this->image_src['path']    = preg_replace($repl, '', $this->image_src['path']);
-		    $this->image_src['realPath'] =preg_replace('/^' . preg_quote($assets_url, '/') . '/', 'assets/',  $this->image_src['path']);
+                    
+                    if (preg_match("/".$_SERVER['SERVER_NAME'].":/i", $this->image_src['path'] )) {
+						$repl = '/http[s]?:\/\/' . $_SERVER['SERVER_NAME'] . ':[0-9]*/';
+					}else{
+						$repl = '/http[s]?:\/\/' . $_SERVER['SERVER_NAME'] . '/';
+					}
+                    
+                    
+                    $this->image_src['path'] = preg_replace($repl, '', $this->image_src['path']);
+                    $this->image_src['realPath'] =preg_replace('/^' . preg_quote($assets_url, '/') . '/', 'assets/',  $this->image_src['path']);
 
     				$img_metas = $this->readMetaArray();
 
-
-
-                   if (count($img_metas) > 0) {
+    				if (count($img_metas) > 0) {
                         $out = $this->createOutput($img_metas);
                         $this->p_count++;
                     }
                     else {
                         $out = "no media found in: {$this->image_src['path']}";
+                        $out .= "<br>doc root: ".$_SERVER['DOCUMENT_ROOT'];
+                        
                     }
                 }
             }
@@ -125,8 +133,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
         $img_metas = array();
         $pattern = '{,.}*.{[jJ][pP][gG],[jJ][pP][eE][gG],[pP][nN][gG],[gG][iI][fF],dat}';
         $filelist = glob($dir . '/' . $pattern, GLOB_BRACE);
-//		usort($filelist, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
-
+		usort($filelist, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
 
  		//check if metafile is still up to date or if we have to create a new one
 		if (strpos($filelist[0], '.fotofolder.dat') == true) {
