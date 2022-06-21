@@ -467,6 +467,13 @@ pre code {
 }
 
 
+/*POU image preview in page*/
+.img_preview {
+    width: 300px;
+    display: block;
+}
+
+
 
 /* Class to contain example code for example if
  * used as a styleguide or pattern library
